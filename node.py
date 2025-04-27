@@ -3,10 +3,10 @@ import sys
 import network
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print("Uso:")
         print("Servidor: python node.py server <HOST> <PORT>")
-        print("Cliente: python node.py client <HOST> <PORT> <FILENAME>")
+        print("Cliente: python node.py client <HOST1> <HOST2> <PORT> <FILENAME>")
         sys.exit(1)
 
     mode = sys.argv[1]
@@ -17,10 +17,10 @@ if __name__ == "__main__":
         network.start_server(host, port)
 
     elif mode == "client":
-        host = sys.argv[2]
-        port = int(sys.argv[3])
-        filename = sys.argv[4]
-        network.connect_to_peer(host, port, filename)
+        hosts = sys.argv[2:-2]  # Los primeros argumentos son los hosts de los nodos
+        port = int(sys.argv[-2])  # El penúltimo argumento es el puerto
+        filename = sys.argv[-1]  # El último argumento es el nombre del archivo
+        network.connect_to_peer_multiple(hosts, port, filename)
 
     else:
         print("Modo desconocido. Usa 'server' o 'client'.")

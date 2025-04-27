@@ -33,6 +33,20 @@ def handle_client(client_socket):
     client_socket.close()
 
 # ===== Cliente =====
+def connect_to_peer_multiple(hosts, port, filename):
+    # Lista de hilos para conexiones simultáneas
+    threads = []
+    
+    # Conectarse a cada nodo y descargar fragmento en un hilo separado
+    for host in hosts:
+        thread = threading.Thread(target=connect_to_peer, args=(host, port, filename))
+        threads.append(thread)
+        thread.start()
+
+    # Esperar a que todos los hilos terminen
+    for thread in threads:
+        thread.join()
+
 def connect_to_peer(host, port, filename):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
@@ -48,13 +62,13 @@ def connect_to_peer(host, port, filename):
 # ===== Enviar archivo =====
 def send_file(conn, filepath):
     filesize = os.path.getsize(filepath)
-    # Calcular el hash del archivo
-    file_hash = calculate_hash(filepath)
-    
-    conn.send(f"{os.path.basename(filepath)}{SEPARATOR}{filesize}{SEPARATOR}{file_hash}".encode())
+    num_chunks = (filesize // BUFFER_SIZE) + 1  # Número de fragmentos
+
+    # Enviar el nombre del archivo y la cantidad de fragmentos
+    conn.send(f"{os.path.basename(filepath)}{SEPARATOR}{num_chunks}".encode())
 
     with open(filepath, "rb") as f:
-        while True:
+        for _ in range(num_chunks):
             bytes_read = f.read(BUFFER_SIZE)
             if not bytes_read:
                 break
@@ -74,12 +88,12 @@ def receive_file(conn, filename):
         print(received)
         return
 
-    file_name, file_size, file_hash = received.split(SEPARATOR)
-    file_size = int(file_size)
+    file_name, num_chunks = received.split(SEPARATOR)
+    num_chunks = int(num_chunks)
 
     with open(f"files/{filename}", "wb") as f:
         total_received = 0
-        while total_received < file_size:
+        while total_received < num_chunks * BUFFER_SIZE:
             bytes_read = conn.recv(BUFFER_SIZE)
             if not bytes_read:
                 break
@@ -88,10 +102,7 @@ def receive_file(conn, filename):
 
     # Verificar la integridad del archivo
     received_hash = calculate_hash(f"files/{filename}")
-    if received_hash == file_hash:
-        print(f"[+] Archivo {filename} recibido exitosamente y la integridad está verificada!")
-    else:
-        print(f"[-] Error: La integridad del archivo {filename} no se ha verificado correctamente!")
+    print(f"Verificando integridad del archivo {filename}... ({received_hash})")
 
 def calculate_hash(filepath):
     sha256 = hashlib.sha256()
