@@ -1,4 +1,3 @@
-# network.py
 import socket
 import threading
 import os
@@ -22,14 +21,24 @@ def start_server(host, port):
 
 def handle_client(client_socket):
     received = client_socket.recv(BUFFER_SIZE).decode()
-    filename = received.strip()
-    print(f"[+] Cliente pidió el archivo: {filename}")
 
-    if os.path.exists(f"files/{filename}"):
-        send_file(client_socket, f"files/{filename}")
-    else:
-        client_socket.send(f"ERROR: Archivo {filename} no encontrado".encode())
+    if received.startswith("SEARCH"):
+        _, filename = received.split(SEPARATOR)
+        filename = filename.strip()
+        if os.path.exists(f"files/{filename}"):
+            client_socket.send("FOUND".encode())
+        else:
+            client_socket.send("NOT_FOUND".encode())
     
+    else:
+        filename = received.strip()
+        print(f"[+] Cliente pidió el archivo: {filename}")
+
+        if os.path.exists(f"files/{filename}"):
+            send_file(client_socket, f"files/{filename}")
+        else:
+            client_socket.send(f"ERROR: Archivo {filename} no encontrado".encode())
+
     client_socket.close()
 
 # ===== Cliente =====
@@ -44,6 +53,15 @@ def connect_to_peer(host, port, filename):
     # Recibir archivo
     receive_file(client_socket, filename)
     client_socket.close()
+
+# ===== Búsqueda de archivo =====
+def search_file(host, port, filename):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((host, port))
+    client_socket.send(f"SEARCH{SEPARATOR}{filename}".encode())
+    response = client_socket.recv(BUFFER_SIZE).decode()
+    client_socket.close()
+    return response == "FOUND"
 
 # ===== Enviar archivo =====
 def send_file(conn, filepath):
@@ -60,13 +78,6 @@ def send_file(conn, filepath):
                 break
             conn.sendall(bytes_read)
 
-def calculate_hash(filepath):
-    sha256 = hashlib.sha256()
-    with open(filepath, "rb") as f:
-        while chunk := f.read(8192):
-            sha256.update(chunk)
-    return sha256.hexdigest()
-
 # ===== Recibir archivo =====
 def receive_file(conn, filename):
     received = conn.recv(BUFFER_SIZE).decode()
@@ -76,6 +87,8 @@ def receive_file(conn, filename):
 
     file_name, file_size, file_hash = received.split(SEPARATOR)
     file_size = int(file_size)
+
+    os.makedirs("files", exist_ok=True)  # Asegura que la carpeta files existe
 
     with open(f"files/{filename}", "wb") as f:
         total_received = 0
@@ -93,6 +106,7 @@ def receive_file(conn, filename):
     else:
         print(f"[-] Error: La integridad del archivo {filename} no se ha verificado correctamente!")
 
+# ===== Calcular hash =====
 def calculate_hash(filepath):
     sha256 = hashlib.sha256()
     with open(filepath, "rb") as f:
