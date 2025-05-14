@@ -1,38 +1,23 @@
-# Sistema P2P de Compartición de Archivos
+Servidor:
+python network.py server <puerto>
 
-Este proyecto es un sistema distribuido básico de compartición de archivos utilizando una arquitectura **Peer-to-Peer (P2P)** con **sockets en Python**.
 
-Cada nodo puede actuar como **servidor** (ofrecer archivos) o como **cliente** (solicitar archivos).
+Cliente:
+python network.py client <archivo>
 
----
-
-## 📦 Estructura del proyecto
-p2p_project/
-├── node.py             # Ejecuta el nodo (modo servidor o cliente)
-├── network.py          # Lógica de conexión y transferencia de archivos
-├── files/              # Carpeta para archivos locales
-└── README.md           # Este archivo
+Search
+python network.py search <nombre_parcial>
 
 
 
-Requisitos
-Python 3.x
+Ejemplo:
 
-Estar en la misma red local (Wi-Fi o LAN) o tener configurado el acceso público (Internet + port forwarding).
-
-
-Comandos para correr el servidor (En Terminal):
-python node.py server <IP_LOCAL> <PUERTO>
-(Ejemplo: "python node.py server 192.168.1.5 5001")
+Servidor (Terminal 1):
+python network.py server 5000
 
 
-Comandos para conexion del cliente (Terminal):
-python node.py client <IP_SERVIDOR> <PUERTO> <NOMBRE_DEL_ARCHIVO>
-(Ejemplo: "python node.py client 192.168.1.5 5001 test.txt")
+Cliente:
+python network.py client test.txt
 
-
-Para obtenr IP de Maquina-Servidor (CMD):
-ipconfig
-
-
-
+Search
+python network.py search test
